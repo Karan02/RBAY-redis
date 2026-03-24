@@ -179,3 +179,9 @@ members are unique, scores don't have to be unique, scores are sorted from least
 - ZRANGE products -inf +inf BYSCORE WITHSCORES 
 - ZRANGE products 1 2 REV LIMIT 1 2 // set product, 1 min index, 2 max index, reverse order first, skip 1st element, then give next two
 - ZRANGE products 0 55 BYSCORE LIMIT 1 1
+
+
+- Sorted Set Use Case- relations between tables and relations sorted in some criteria
+
+eg query
+- ZRANGE items:endingAt 130 +inf BYSCORE LIMIT 0 2 // two items ending soonest, if current time is 130(UNIX time)
