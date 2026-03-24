@@ -1,0 +1,181 @@
+- create database on redis.com / cloud.redis.io
+
+-or locally install  Redis-CLI
+
+docs for commands redis.io/commands
+
+Stephen Grider practice 
+https://rbook.cloud
+
+
+- SET Key Value
+- SET message "Hi There!"
+- GET message
+- SET message 'Hi there!'
+- GET message
+- SET color red
+- SET color green GET
+- SET color 'hi there' XX // only set if defined
+- SET colorlaksjdf blue NX // only set if not defined
+- SET color red EX 2 // expires after 2 seconds
+- GET color
+- SETEX color 2 red // expire after 2 seconds
+- MSET color red model Toyota // multi set
+- MGET color model
+- GETRANGE model 0 2
+- SETRANGE model 2 blue
+- SET age 20
+- INCR age
+- DECR age
+- INCRBY age 20
+- DECRBY age 4
+- INCRBYFLOAT age -3.333
+- SET news 'Today\'s Headlines' PX 3000 // automatically expires after 3000 milliseconds
+ 
+
+
+Common practice for keys
+users:45 items:19
+users:posts:901
+
+or new feature for unique id
+users#45
+users:posts#901
+
+pagecache#/about
+pagecache#/privacy
+
+Top Applications of Redis Database:
+
+    	Caching (Database & Content): Stores frequently accessed data (e.g., query results, HTML pages) to reduce latency and alleviate load on primary databases.
+    
+	Session Management: Stores user session data (logins, shopping carts) across distributed web apps for fast retrieval.
+    
+	Real-Time Leaderboards: Utilizes Sorted Sets to maintain, update, and retrieve real-time rankings instantly, commonly used in gaming.
+    	
+	Pub/Sub Messaging & Queues: Enables real-time chat, notifications, and task queuing (e.g., background jobs) with high throughput.
+    
+	Real-Time Analytics & Personalization: Processes large volumes of streaming data instantly for live metrics, product recommendations, and behavioral targeting.
+    
+	Geospatial Applications: Stores and queries location-based information, such as finding nearby drivers or places.
+    
+	Rate Limiting: Controls API usage by counting requests per user/IP over specific time frames. 
+
+
+
+
+Hash data structure - only as many key value pairs no nested no array (easiest data structure)
+
+- HSET company name 'Company co' age 1915 industry materials revenue 5.3
+- HGET company revenue
+- HGETALL company
+- HEXISTS company age (check if company exists or not)
+- DEL company
+- HDEL company age  (deleting one key value pair)
+- HSET company age 24
+- HINCRBY company age 2
+- HINCRBYFLOAT company revenue 2.3 
+- HINCRBY company xyz 3 (create a new field xyz ,value 3)
+- HINCRBY company age -2 (decrease by 2 )
+- HSTRLEN company name
+- HKEYS company (returns all fields)
+- HVALS company (returns all values)
+
+For empty response use below condition to check in nodejs
+- Object.keys(cache_response).length === 0
+
+
+
+
+
+SQL Database Design Methodology - Put data in tables - then figure how we will query it
+Redis Design Methodology - Figure out what queries we need to answer - Structure data to best answer those queries
+
+storing simple values - don't use hash
+storing multiple attributes - store in hash
+
+
+Batching commands with pipelines
+for eg. get data for arrays of IDs, so generate first all commands then tell redis database to execute all commands together, saving us time for 
+running individual commands 
+
+const results = await Promise.all([
+  client.get('color'),
+  client.get('name')
+]) // pipelining in node-redis world
+
+
+
+
+
+
+
+Sets (unique)
+- SADD colors green
+- SADD colors red
+- SADD numbers 3
+
+- SMEMBERS colors
+
+Union, Intersect, Diff
+
+- SADD colors:1 red blue orange
+- SADD colors:2 blue green purple
+- SADD colors:3 blue red purple
+
+- SUNION colors:1 colors:2 colors:3
+- SINTER colors:1 colors:2 colors:3
+- SDIFF colors:1 colors:2 colors:3 (check for elements in first set and not others)
+
+- SINTERSTORE colors:results colors:1 colors:2 colors:3 (storing results in brand new key)
+similarly SDIFFSTORE, SUNIONSTORE
+
+- SISMEMBER colors:1 red (is red present inside set)
+- SISMEMBER colors:1 purple
+
+- SMISMEMBER colors:1 red green blue  (check for multiple members)(output: [1,0,1])
+
+- SCARD colors:1 (gives cardinality of a set, number of elements)
+- SREM colors:1 red (removes element)
+
+- SREM colors:2 blue
+- SISMEMBER colors:2 blue 
+
+- SSCAN colors:1 0 COUNT 100 (look at this set, cursorID,#elements to return)(scan through all elements of set)
+- SSCAN colors:1 0 COUNT 2
+
+SPOP, SRANDMEMBER, SMOVE
+
+
+
+Sorted Sets - mix of a hash and a set, no keys and values, there are members and scores
+members are unique, scores don't have to be unique, scores are sorted from least to greatest
+
+- ZADD products 45 monitor
+- ZSCORE products monitor
+- ZREM products monitor
+- ZSCORE products monitor
+- DEL products
+
+- ZADD products 45 cpu
+- ZADD products 10 cupboard
+- ZADD products 55 power
+
+- ZCARD products // cardinality of products set 
+- ZCOUNT products 0 50 // count products with score between 0 and 50 including 0 and 50 
+- ZCOUNT products 0 (55  // greater than 0 and less than 55
+- ZCOUNT products -inf +inf
+- ZPOPMIN - remove lowest score pairs
+- ZPOPMAX - remove highest score pairs
+- ZPOPMIN products 2 //remove lowest 2 
+- ZPOPMAX products 2
+- ZINCRBY products 15 keyboard
+- ZINCRBY products 15 cpu
+- ZSCORE products cpu
+- ZRANGE products 1 2 WITHSCORES // 1 and 2 are indexes, including, withscores gives scores also
+- ZRANGE products 0 48 BYSCORE WITHSCORES // 0 minimum score and 48 maximum score
+- ZRANGE products 0 50 BYSCORE WITHSCORES 
+- ZRANGE products 0 (55 BYSCORE WITHSCORES // less than 55 not including
+- ZRANGE products -inf +inf BYSCORE WITHSCORES 
+- ZRANGE products 1 2 REV LIMIT 1 2 // set product, 1 min index, 2 max index, reverse order first, skip 1st element, then give next two
+- ZRANGE products 0 55 BYSCORE LIMIT 1 1
