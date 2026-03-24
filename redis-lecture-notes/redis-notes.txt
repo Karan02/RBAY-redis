@@ -185,3 +185,6 @@ members are unique, scores don't have to be unique, scores are sorted from least
 
 eg query
 - ZRANGE items:endingAt 130 +inf BYSCORE LIMIT 0 2 // two items ending soonest, if current time is 130(UNIX time)
+
+SORT command
+used on set, sorted sets, lists
