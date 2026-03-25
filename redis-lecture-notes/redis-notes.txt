@@ -102,7 +102,7 @@ running individual commands
 const results = await Promise.all([
   client.get('color'),
   client.get('name')
-]) // pipelining in node-redis world
+]) // pipelining in node-redis world for batch commands processing
 
 
 
@@ -141,7 +141,7 @@ similarly SDIFFSTORE, SUNIONSTORE
 - SREM colors:2 blue
 - SISMEMBER colors:2 blue 
 
-- SSCAN colors:1 0 COUNT 100 (look at this set, cursorID,#elements to return)(scan through all elements of set)
+- SSCAN colors:1 0 COUNT 100 (look at this colors:1 set, cursorID,#elements to return)(scan through all elements of set)
 - SSCAN colors:1 0 COUNT 2
 
 SPOP, SRANDMEMBER, SMOVE
@@ -183,8 +183,106 @@ members are unique, scores don't have to be unique, scores are sorted from least
 
 - Sorted Set Use Case- relations between tables and relations sorted in some criteria
 
-eg query
+example query from rbay ecommerce web app
 - ZRANGE items:endingAt 130 +inf BYSCORE LIMIT 0 2 // two items ending soonest, if current time is 130(UNIX time)
+
+
+
+
+
+
+
+
+
 
 SORT command
 used on set, sorted sets, lists
+
+- HSET books:good title 'Good Book' year 1950
+- HSET books:bad title 'Bad Book' year 1930
+- HSET books:ok title 'OK Book' year 1940
+
+- ZADD books:likes 999 good
+- ZADD books:likes 0 bad
+- ZADD books:likes 40 ok
+
+- SORT books:likes ALPHA       // sort books alphabetically
+- SORT books:likes LIMIT 1 2 ALPHA   //skip 1 limit 2
+
+- SORT books:likes BY books:*->year // sort Ids by year
+
+- SORT books:likes BY books:*->year GET books:*->title // list the title of each book, sorted by year published
+- SORT books:likes BY books:*->year
+    GET #
+    GET books:*->title
+    GET books:*->year
+
+- SORT books:likes BY nosort
+    GET #
+    GET books:*->title
+    GET books:*->year
+
+- SORT books:likes BY nosort ASC // do not sort, just give entries
+    GET #
+    GET books:*->title
+    GET books:*->year
+
+- SORT books:likes BY nosort DESC
+    GET #
+    GET books:*->title
+    GET books:*->year
+
+
+HyperLogLog (redis gives storing size upto 12 kb memory)
+- Algorithm for approximately counting the number of
+unique elements, similar to a set but doesn't store
+elements
+- PFADD vegetables potatoe
+- PFADD vegetables celery
+
+- PFCOUNT vegetables // 2
+
+
+
+Lists
+- LPUSH temps 25 // push element 25 to left side of list
+- RPUSH temps 27 // push element 27 to right side of list
+- LLEN temps // get the number of elements in the list
+- LINDEX temps -1 // get the value stored at the provided index
+- LINDEX temps 0
+- LRANGE temps 0 3 // all elements in list from index 0 to 3, including
+- LPOS temps 25 RANK 2 COUNT 2 MAXLEN 10 // 2nd instance of 25, retrieve the index of the first 2 matches, only search for first 10 elements 
+- LPOP temps 2 // remove first 2 elements
+- RPOP temps 2 // remove last 2 elements
+- LSET temps 2 32 // go to index 2 and update to 32
+- LSET temps -1 35 // change last element to 35
+- LTRIM temps 2 5 // only keep elements from index 2 to 5 including
+- LINSERT temps BEFORE 25 15 // insert 15 before 25
+- LINSERT temps AFTER 30 15 // insert 30 after 15
+- LREM temps -2 25 // move from right to left, remove 2 instances of 25
+- LREM temps 1 25 // moving from left to right remove 1 instance 0f 25
+- LREM temps 0 25 // 0 means remove all copies of 25
+- LRANGE temps 0 -1 // print all elements
+
+List use cases- append-only/prepend-only data(temperature readings/stock values)
+- when to fetch last/first N values of something
+- no sort order besides the order it was inserted
+
+Should not used
+- you need to apply some filtering criteria, your data is sorted by some attribute
+
+example practice (list command where most recently reviewed book)
+DEL reviews
+
+RPUSH reviews b2
+RPUSH reviews a1
+
+HSET books:a1 title "Good Book"
+HSET books:b2 title "Bad Book"
+
+SORT reviews BY nosort GET books:*->title 
+
+
+
+- offset, count in list Offset=1, Count=3 // skip last element get next last 3 elements
+LRANGE history#a1 (-1*offset - count) (-1 - offset)
