@@ -326,3 +326,29 @@ Output [
 
 Isolated connections for transaction
 - create a new connection just for the transaction, close the connection
+
+
+LUA scripts
+- on server server written in LUA -> Redis loads LUA script storing it as ID  -> filtered results -> receive results
+- solves data overfetching, solve concurrency issues, minimize the number of round trips between server + redis
+
+Downsides: Keys must be known ahead of time, tough to test scripts, loss of language features i.e. type checking with typescript, another language to learn (lua)
+
+
+- SCRIPT LOAD 'return 1 + 1' // returns a27e7e8a43702b7046d4f6a7ccf5b60cef6b9bd9
+- EVALSHA a27e7e8a43702b7046d4f6a7ccf5b60cef6b9bd9 0 // 2
+
+Script
+- return 1 + ARGV[1]
+
+- EVALSHA <ID> 0 '1' '2' '3' '4' // provide
+
+- SCRIPT LOAD 'return 10 + tonumber(ARGV[1])'
+- EVALSHA dec9725d1e710c57d051711e82fbe0ac1b261c73 0 '10' 
+
+- SCRIPT LOAD 'return 10 + tonumber(ARGV[1]) + tonumber(ARGV[2])' 
+- EVALSHA 7a38a265747c3c7a9bbd202bb1b508a1a1bf9487 0 '100' '200'
+
+- SET color red
+- SCRIPT LOAD 'return redis.call("GET",KEYS[1])'
+- EVALSHA e4c38c69bba84a1142e79b1323ecf44eee500feb 1 color  

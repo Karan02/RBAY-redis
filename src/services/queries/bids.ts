@@ -5,6 +5,7 @@ import { DateTime } from 'luxon';
 import { getItem } from './items';
 
 export const createBid = async (attrs: CreateBidAttrs) => {
+	// transaction in redis
 	return client.executeIsolated(async (isolatedClient) => {
 		await isolatedClient.watch(itemsKey(attrs.itemId)) 
 
