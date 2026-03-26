@@ -286,3 +286,43 @@ SORT reviews BY nosort GET books:*->title
 
 - offset, count in list Offset=1, Count=3 // skip last element get next last 3 elements
 LRANGE history#a1 (-1*offset - count) (-1 - offset)
+
+
+Options for handling concurrency
+- use an atomic update command (HINCRBY or HSETNX)
+- use a transaction with the WATCH command
+- use a lock
+- use a custom LUA update script
+
+- HINCRBY car instock 1 // atomic update, no need to fetch data from redis db, update directly
+- HSETNX car color red - HSETNX car color blue // set only if not exist, so second concurrent command won't run, helps in some cases
+
+
+Transactions
+- MULTI // start a new transaction
+- SET color red // commmand
+- SET count 5 // command
+- EXEC // Run all queued commands
+
+Output [
+  "OK",
+  "OK"
+]
+
+// watch the key  color until the next transaction is executed, if it change, cancel the transaction
+- WATCH color 
+- MULTI
+- SET color red
+- SET count 5
+- EXEC
+
+// below transaction execution will give null
+- WATCH color
+- SET color blue 
+- MULTI
+- SET color red
+- SET count 5
+- EXEC
+
+Isolated connections for transaction
+- create a new connection just for the transaction, close the connection
