@@ -352,3 +352,17 @@ Script
 - SET color red
 - SCRIPT LOAD 'return redis.call("GET",KEYS[1])'
 - EVALSHA e4c38c69bba84a1142e79b1323ecf44eee500feb 1 color  
+
+
+
+
+
+
+
+
+
+
+Concurrency
+
+Lock
+- (Professional) Redlock algorithm for concurrency system (check node-redlock, there are many)
