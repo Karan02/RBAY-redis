@@ -251,7 +251,7 @@ Lists
 - LINDEX temps -1 // get the value stored at the provided index
 - LINDEX temps 0
 - LRANGE temps 0 3 // all elements in list from index 0 to 3, including
-- LPOS temps 25 RANK 2 COUNT 2 MAXLEN 10 // 2nd instance of 25, retrieve the index of the first 2 matches, only search for first 10 elements 
+- LPOS temps 25 RANK 2 COUNT 2 MAXLEN 10 // 2nd instance of 25, retrieve the index of the first 2 matches, only search for first 10 such elements 
 - LPOP temps 2 // remove first 2 elements
 - RPOP temps 2 // remove last 2 elements
 - LSET temps 2 32 // go to index 2 and update to 32
@@ -316,7 +316,7 @@ Output [
 - SET count 5
 - EXEC
 
-// below transaction execution will give null
+// below transaction execution will give null(fail)
 - WATCH color
 - SET color blue 
 - MULTI

@@ -23,8 +23,8 @@ Index:
     SCHEMA name TEXT year NUMERIC color TAG
 
 
-- FT.SEARCH idx:cars '@name:(fast car)' // car name 'fast car'
-- FT.SEARCH idx:cars '@color:{blue}'  // car with color blue
+- FT.SEARCH idx:cars '@name:(fast car)' // car name text 'fast car'
+- FT.SEARCH idx:cars '@color:{blue}'  // car with tag color blue
 - FT.SEARCH idx:cars '@year:[1955 1980]' //Cars between year 1950 and 1980
 
 
@@ -83,7 +83,7 @@ TF-IDF algorithm - which word is most relevant to search term
 
 Weighting fields along with "and or" operation
  
-- (@name:(chair) => {$weight:5.0}) | (@description:(chair)) // more preferred in name 'chair' with 'and or' description chair
+- (@name:(chair) => {$weight:5.0}) | (@description:(chair)) // more preferred in name 'chair' with 'and or' description 'chair'
 
 
 Understanding queries
@@ -105,5 +105,5 @@ Check Query performance
 RediSearch can sort search results, only sortable one field at a time, field you 
 plan to sort need to be marked as SORTABLE when index is created
 
-In index one can add field and not remove fields.
-So manually delete if needed and recreate index
+In existing index, one can add fields but cannot not remove fields.
+So manually delete(index) if needed and recreate index
