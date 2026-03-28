@@ -76,3 +76,34 @@ we can go upto 3 character mismatch %%%text%%%
 Prefix search (min 2 chars)
 - FT.SEARCH idx:cars '@name:(fa*)' 
 - FT.SEARCH idx:cars '@name:(ca*)' 
+
+- FT._LIST  //List all index
+
+TF-IDF algorithm - which word is most relevant to search term
+
+Weighting fields along with "and or" operation
+ 
+- (@name:(chair) => {$weight:5.0}) | (@description:(chair)) // more preferred in name 'chair' with 'and or' description chair
+
+
+Understanding queries
+
+FT.EXPLAINCLI - gives some information on query but does not execute
+
+- FX.EXPLAINCLI idx:items 'chair -desk' // showing all results having chair but not desk
+
+//compare following 2 queries explanation
+- FT.EXPLAINCLI idx:items '(@name:(chair)) | (@description:(chair))'
+- FT.EXPLAINCLI idx:items '@name:(chair) | @description:(chair)'
+
+
+Check Query performance 
+- FT.PROFILE idx:items SEARCH QUERY 'chair' LIMIT 0 0
+- FT.PROFILE idx:items SEARCH QUERY '%%chair%%' LIMIT 0 0
+
+
+RediSearch can sort search results, only sortable one field at a time, field you 
+plan to sort need to be marked as SORTABLE when index is created
+
+In index one can add field and not remove fields.
+So manually delete if needed and recreate index
