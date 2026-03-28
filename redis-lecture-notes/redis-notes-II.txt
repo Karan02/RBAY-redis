@@ -1,0 +1,78 @@
+
+Redis Core - Strings, Sets, Sorted Sets, Hashes, Lists, HyperLogLogs
+RedisJSON - JSON storage + manipulation
+RediSearch - True search + querying
+
+Redis Stack - RediSearch, RedisJSON, RedisGraph, RedisTimeSeries, RedisBloom
+
+On managed services - you cannot use redis modules
+Option use Redis Lab Manager - Redis, RedisJSON, RediSearch (manager runs a copy of redis on cloud providers with a few modules preinstalled)
+
+RediSearch:
+
+Index:
+- FT.SEARCH, FT.CREATE
+
+- HSET cars#a1 name 'fast car' color red year 1950
+- HSET cars#b1 name 'car' color red year 1960
+- HSET cars#c1 name 'old car' color blue year 1970
+- HSET cars#d1 name 'new car' color blue year 1990
+
+
+- FT.CREATE idx:cars ON HASH PREFIX 1 cars#
+    SCHEMA name TEXT year NUMERIC color TAG
+
+
+- FT.SEARCH idx:cars '@name:(fast car)' // car name 'fast car'
+- FT.SEARCH idx:cars '@color:{blue}'  // car with color blue
+- FT.SEARCH idx:cars '@year:[1955 1980]' //Cars between year 1950 and 1980
+
+
+querying vs searching
+
+querying (TAG) - gives exact results you ask for
+searching (TEXT) - give results that best answers your question
+
+
+- Create an index for searching all keys starting with a particular string
+FT.CREATE 
+  idx:cars // name of index (index convention idx:cars)
+  ON HASH  // We want to build an index for searching hashes (another option is JSON, for json record type)
+  PREFIX 1 cars# // all keys starting with cars# (for 2 key PREFIX 2 cars# trucks#)
+  SCHEMA // describe fields that should be indexed for each hash
+  name TEXT //name of field and its type
+  year NUMERIC //name of field and its type
+  color TAG //name of field and its type (if you don't need color than just remove here)
+
+Types: NUMERIC, GEO, VECTOR, TAG, TEXT
+
+Delete an index -> FT.DROPINDEX
+
+
+- @name:(fast)  // text
+- @color:{red} // tag
+- -@color:{red} // color not equal to red
+- @color:{red\blue} // tag having spaces
+- @color:{red | blue} // tag pipe | is 'or'
+- @year:[1960 1990] // numeric
+- - @year:[1960 +inf] //1960 or greater than
+- - @year:[(1960 (1990] // years non inclusive 1960 and 1990
+
+- FT.SEARCH idx:cars '@year:[1955 1980] @color:{blue}'  // car made between 1955 and 1980 and color blue
+- FT.SEARCH idx:locations '@cities:{"New York" | "Los Angeles" | "Barcelona"}' // wrap search queries in quotes
+
+
+All stop words are removed from tag and text queries - to, a ,or, a, is the, an ,etc.
+All stop words, spaces and punctuation are removed
+Text search uses stemming algorithm (reducing to words to base form ie. fastify, fasting, fastly ---> fast)
+- FT.SEARCH idx:cars 'fastly' 
+
+Fuzzy search
+- FT.SEARCH idx:cars '@name:(%dar%)' // %% is to allow one character mismatch - dar --> car search
+- FT.SEARCH idx:cars '@name:(%gast%)' // one character mismatch - gast -> fast
+- FT.SEARCH idx:cars '@name:(%%ddar%%)' // allow 2 character mismatch
+we can go upto 3 character mismatch %%%text%%%
+
+Prefix search (min 2 chars)
+- FT.SEARCH idx:cars '@name:(fa*)' 
+- FT.SEARCH idx:cars '@name:(ca*)' 
