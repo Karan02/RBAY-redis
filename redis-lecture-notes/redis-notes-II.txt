@@ -107,3 +107,98 @@ plan to sort need to be marked as SORTABLE when index is created
 
 In existing index, one can add fields but cannot not remove fields.
 So manually delete(index) if needed and recreate index
+
+
+
+Streams:
+- Kind of like a cross between a list and sorted sets
+- use for communication between different servers
+- most useful with consumer groups
+- tons and tons of tiny details
+
+Message producer ---> Redis (Stream) ---> message consumer
+
+XADD
+    fruits // stream is stored
+    * // have redis an ID for us (unix timestamp)
+    name // key to add to the hash for this message
+    strawberry // value to add to the hash for this message
+    color // key
+    red // value
+
+
+- XADD fruits * color red name strawberry // "1774765676405-0" , 0 is to tell no other record added in same unix time
+- XADD fruits * color yellow name banana
+Read messages from a stream
+- XREAD STREAMS fruits 0-0 // the key of the streams - fruit, we want to read, 0-0 read all messages from the beginning of time\
+- XREAD STREAMS fruits 1774765676405-0 // read all messages of stream after timestamp 1774765676405-0
+- XREAD COUNT 2 STREAMS fruits 0-0 // read no more than 2 messages
+- XREAD BLOCK 3000 STREAMS fruits 9999999-0 // if no messages available wait for 3000ms, key of the stream we want to read from, read all messages created after this time(9999999-0)
+- XREAD COUNT 5 BLOCK 3000 STREAMS fruits 1774766382828-0 // returns early even if one count found
+- XREAD BLOCK 3000 STREAMS fruits $ // block for 3 s for messages starting at the current time
+
+(consumer creates messages) - XREAD BLOCK 3000 ... $ (10, 11, 12 Created in streams)
+- XREAD BLOCK 3000 ... 10 (read after the entry 10)
+- XREAD BLOCK 3000 ... 11 (read after the entry 11)
+
+ - XRANGE fruits 12345-0 555555-0 COUNT 5 // key of the stream we want to read
+look for messages starting at 12345-0 and including 555555-0 and return no more than 5 messages
+- XRANGE fruits 1774766717322-0 1774766717323-0 
+- XRANGE fruits (1774766717322-0 (1774766717323-0 
+- XRANGE fruits - + //after and before a point of time
+- XRANGE fruits 1774766717322-0 +
+- XRANGE fruits - (1774766717322-0
+
+
+
+Consumer Groups (have different names for worker)
+- Consumer group workers send acknowledgement receipt Redis stream log
+- redis keep track of last delivered ID in redis stream log
+
+ XGROUP CREATE fruits fruits-group $ MKSTREAM // 'fruits' is a key of stream, fruits-group - name of a group
+$ -> if stream already exists, only handle messages from this point of time, MKSTREAM -> make stream if does not exists
+
+- XGROUP CREATECONSUMER fruits fruits-group worker-1 // fruits-> key of stream, fruits-group -> name of a group, worker-1 name of a new consumer 
+- XGROUP CREATECONSUMER fruits fruits-group worker-2 
+
+- XINFO GROUPS fruitsZ
+- XINFO CONSUMERS fruits fruits-group 
+
+// adding messages inside stream
+- XADD fruits 10-0 name banana color yellow
+- XADD fruits 20-0 name apple color red
+- XADD fruits 30-0 name orange color orange
+
+
+- XREADGROUP GROUP fruits-group worker-1 COUNT 1 BLOCK 2000 STREAMS fruits > // (>) give us undelivered message
+
+
+- XREADGROUP GROUP fruits-group worker-2 COUNT 1 BLOCK 2000 STREAMS fruits > 
+- XREADGROUP GROUP fruits-group worker-3 COUNT 1 BLOCK 2000 STREAMS fruits > 
+
+- XACK fruits fruits-group 10-0 // key - fruits, group - fruits-group, ACK message with id 10-0
+- XINFO GROUPS fruits
+
+
+
+
+
+
+- XAUTOCLAIM 
+   key-of-stream
+   name-of-group 
+   assign-these-pending-messages-to-worker-2 
+   claim-messages-older-than-10-seconds 
+   look-for-pending-messages-after-this-id
+
+- DEL fruits
+- XGROUP CREATE fruits fruits-group $ MKSTREAM
+- XGROUP CREATECONSUMER fruits fruits-group worker-1
+- XGROUP CREATECONSUMER fruits fruits-group worker-2
+- XADD fruits 10-0 name banana color yellow
+- XADD fruits 20-0 name apple color red
+- XADD fruits 30-0 name orange color orange
+- XREADGROUP GROUP fruits-group worker-2 COUNT 1 BLOCK 2000 STREAMS fruits > 
+- XAUTOCLAIM fruits fruits-group worker-2 10000 0-0 
+- XINFO GROUPS fruits
+- XINFO CONSUMERS fruits fruits-group 
